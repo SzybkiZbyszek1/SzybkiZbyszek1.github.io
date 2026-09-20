@@ -1,52 +1,330 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Szybki Zbyszek</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZbyszekDrop — Błyskawiczny Transfer P2P</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
-    body {
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+    }
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      background: #0f172a;
-      color: white;
-      font-family: sans-serif;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+    }
+    p.desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.4;
     }
     .box {
-      background: #1e293b;
-      padding: 30px;
-      border-radius: 12px;
+      background: #1f2937;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    .id-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .badge {
+      font-family: monospace;
+      font-size: 18px;
+      background: #111827;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      color: #38bdf8;
+      flex-grow: 1;
       text-align: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      user-select: all;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: var(--accent);
     }
     button {
-      background: #22c55e;
-      color: #000;
+      background: var(--accent);
+      color: #0b0f19;
       border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    button:hover {
+      background: var(--accent-hover);
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      margin-top: 10px;
+      color: var(--text-muted);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #eab308;
+    }
+    .dot.connected {
+      background: #10b981;
+    }
+    .dropzone {
+      border: 2px dashed #374151;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+    .dropzone:hover {
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.05);
+    }
+    .dropzone input {
+      display: none;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #374151;
+      border-radius: 4px;
       margin-top: 15px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.1s linear;
+    }
+    .log {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      word-break: break-all;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Działa na całym świecie! 🌍</h1>
-    <p id="tekst">Moja pierwsza strona na GitHubie.</p>
-    <button onclick="klik()">Sprawdź JS</button>
+
+  <div class="container">
+    <h1>⚡ ZbyszekDrop</h1>
+    <p class="desc">Bezpośredni, bezpieczny transfer plików w sieci P2P (WebRTC). Dane lecą prosto między urządzeniami.</p>
+
+    <!-- TWÓJ KOD -->
+    <div class="box">
+      <div class="label">Twój identyfikator urządzenia</div>
+      <div class="id-row">
+        <div class="badge" id="my-id">Łączenie...</div>
+        <button onclick="kopiujKod()">Kopiuj</button>
+      </div>
+    </div>
+
+    <!-- POŁĄCZ Z KIMŚ -->
+    <div class="box">
+      <div class="label">Połącz z drugim urządzeniem</div>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="target-id" placeholder="Wklej ID kumpla lub telefonu..." />
+        <button onclick="polaczZPeerem()">Połącz</button>
+      </div>
+      <div class="status">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Oczekiwanie na połączenie...</span>
+      </div>
+    </div>
+
+    <!-- STREFA WYSYŁANIA PLIKU -->
+    <div class="dropzone" id="drop-area" onclick="document.getElementById('file-input').click()">
+      <p style="font-size: 15px; font-weight: 500; margin-bottom: 4px;">Kliknij lub upuść tutaj plik</p>
+      <p style="font-size: 12px; color: var(--text-muted);">Maksymalna prędkość Twojego łącza</p>
+      <input type="file" id="file-input" onchange="wyslijPlik(this.files[0])" />
+    </div>
+
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="log" id="log-info"></div>
   </div>
 
   <script>
-    function klik() {
-      document.getElementById('tekst').innerText = 'JavaScript działa idealnie!';
+    // Generowanie krótkiego losowego ID dla wygody
+    const randomId = Math.random().toString(36).substring(2, 7);
+    const peer = new Peer(randomId);
+
+    let activeConn = null;
+
+    const myIdEl = document.getElementById("my-id");
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+    const logInfo = document.getElementById("log-info");
+    const progressBar = document.getElementById("progress-bar");
+    const progressFill = document.getElementById("progress-fill");
+
+    // Po nawiązaniu kontaktu z serwerem sygnałowym
+    peer.on("open", (id) => {
+      myIdEl.innerText = id;
+    });
+
+    // Odbieranie połączenia od kogoś
+    peer.on("connection", (conn) => {
+      activeConn = conn;
+      setupConnectionHandlers();
+    });
+
+    // Ręczne łączenie z wpisanym ID
+    function polaczZPeerem() {
+      const targetId = document.getElementById("target-id").value.trim();
+      if (!targetId) return;
+      statusText.innerText = "Łączenie z: " + targetId + "...";
+      activeConn = peer.connect(targetId, { reliable: true });
+      setupConnectionHandlers();
     }
+
+    function setupConnectionHandlers() {
+      activeConn.on("open", () => {
+        statusDot.classList.add("connected");
+        statusText.innerText = "Połączono z urządzeniem!";
+        statusText.style.color = "#10b981";
+      });
+
+      activeConn.on("data", (data) => {
+        // Odbieranie pliku
+        if (data.file) {
+          logInfo.innerText = "Odbieranie pliku: " + data.filename;
+          const blob = new Blob([data.file]);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          logInfo.innerText = "Pobrano plik: " + data.filename + " ✅";
+        }
+      });
+
+      activeConn.on("close", () => {
+        statusDot.classList.remove("connected");
+        statusText.innerText = "Rozłączono.";
+        statusText.style.color = "#ef4444";
+        activeConn = null;
+      });
+    }
+
+    // Wysyłanie pliku
+    function wyslijPlik(file) {
+      if (!file) return;
+      if (!activeConn || !activeConn.open) {
+        alert("Najpierw musisz połączyć się z drugim urządzeniem!");
+        return;
+      }
+
+      logInfo.innerText = "Wysyłanie: " + file.name + " (" + (file.size / 1024 / 1024).toFixed(2) + " MB)...";
+      progressBar.style.display = "block";
+      progressFill.style.width = "40%";
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        activeConn.send({
+          file: e.target.result,
+          filename: file.name
+        });
+        progressFill.style.width = "100%";
+        logInfo.innerText = "Plik wysłany pomyślnie! 🚀";
+        setTimeout(() => {
+          progressBar.style.display = "none";
+          progressFill.style.width = "0%";
+        }, 2000);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function kopiujKod() {
+      navigator.clipboard.writeText(myIdEl.innerText);
+      alert("Skopiowano Twój kod: " + myIdEl.innerText);
+    }
+
+    // Obsługa przeciągania myszką
+    const dropArea = document.getElementById("drop-area");
+    dropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropArea.style.borderColor = "#10b981";
+    });
+    dropArea.addEventListener("dragleave", () => {
+      dropArea.style.borderColor = "#374151";
+    });
+    dropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropArea.style.borderColor = "#374151";
+      if (e.dataTransfer.files.length > 0) {
+        wyslijPlik(e.dataTransfer.files[0]);
+      }
+    });
   </script>
 </body>
 </html>
