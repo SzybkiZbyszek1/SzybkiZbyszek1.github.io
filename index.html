@@ -2,9 +2,51 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Szybki Zbyszek</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #0f172a;
+      color: white;
+      font-family: sans-serif;
+    }
+    .box {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    button {
+      background: #22c55e;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Strona działa! 🚀</h1>
+  <div class="box">
+    <h1>Działa na całym świecie! 🌍</h1>
+    <p id="tekst">Moja pierwsza strona na GitHubie.</p>
+    <button onclick="klik()">Sprawdź JS</button>
+  </div>
+
+  <script>
+    function klik() {
+      document.getElementById('tekst').innerText = 'JavaScript działa idealnie!';
+    }
+  </script>
 </body>
 </html>
