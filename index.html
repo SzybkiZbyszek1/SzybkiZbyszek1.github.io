@@ -14,6 +14,8 @@
       --accent-hover: #059669;
       --text: #f9fafb;
       --text-muted: #9ca3af;
+      --download: #38bdf8;
+      --download-hover: #0284c7;
     }
     * {
       box-sizing: border-box;
@@ -33,7 +35,7 @@
     }
     .container {
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -167,6 +169,61 @@
       margin-top: 12px;
       word-break: break-all;
     }
+
+    /* KARTY ODEBRANYCH PLIKÓW */
+    .incoming-section {
+      margin-top: 24px;
+    }
+    .incoming-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .file-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-left: 4px solid var(--download);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    .file-details {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .file-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+    }
+    .file-size {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .btn-download {
+      background: var(--download);
+      color: #0b0f19;
+      font-size: 13px;
+      padding: 8px 14px;
+    }
+    .btn-download:hover {
+      background: var(--download-hover);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -209,10 +266,15 @@
     </div>
 
     <div class="log" id="log-info"></div>
+
+    <!-- ODEBRANE PLIKI -->
+    <div class="incoming-section" id="incoming-section" style="display: none;">
+      <div class="label">Odebrane pliki gotowe do pobrania</div>
+      <div class="incoming-list" id="incoming-list"></div>
+    </div>
   </div>
 
   <script>
-    // Generowanie krótkiego losowego ID dla wygody
     const randomId = Math.random().toString(36).substring(2, 7);
     const peer = new Peer(randomId);
 
@@ -224,25 +286,30 @@
     const logInfo = document.getElementById("log-info");
     const progressBar = document.getElementById("progress-bar");
     const progressFill = document.getElementById("progress-fill");
+    const incomingSection = document.getElementById("incoming-section");
+    const incomingList = document.getElementById("incoming-list");
 
-    // Po nawiązaniu kontaktu z serwerem sygnałowym
     peer.on("open", (id) => {
       myIdEl.innerText = id;
     });
 
-    // Odbieranie połączenia od kogoś
     peer.on("connection", (conn) => {
       activeConn = conn;
       setupConnectionHandlers();
     });
 
-    // Ręczne łączenie z wpisanym ID
     function polaczZPeerem() {
       const targetId = document.getElementById("target-id").value.trim();
       if (!targetId) return;
       statusText.innerText = "Łączenie z: " + targetId + "...";
       activeConn = peer.connect(targetId, { reliable: true });
       setupConnectionHandlers();
+    }
+
+    function formatRozmiar(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1048576).toFixed(2) + " MB";
     }
 
     function setupConnectionHandlers() {
@@ -253,18 +320,52 @@
       });
 
       activeConn.on("data", (data) => {
-        // Odbieranie pliku
         if (data.file) {
-          logInfo.innerText = "Odbieranie pliku: " + data.filename;
+          logInfo.innerText = "Odebrano nowy plik: " + data.filename + " ✅";
+
+          // Pokaż sekcję z listą plików
+          incomingSection.style.display = "block";
+
+          // Tworzenie bloba w pamięci (plik czeka na kliknięcie)
           const blob = new Blob([data.file]);
           const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = data.filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          logInfo.innerText = "Pobrano plik: " + data.filename + " ✅";
+
+          // Generowanie karty z plikiem
+          const card = document.createElement("div");
+          card.className = "file-card";
+
+          const details = document.createElement("div");
+          details.className = "file-details";
+
+          const nameEl = document.createElement("div");
+          nameEl.className = "file-name";
+          nameEl.innerText = data.filename;
+          nameEl.title = data.filename;
+
+          const sizeEl = document.createElement("div");
+          sizeEl.className = "file-size";
+          sizeEl.innerText = formatRozmiar(data.size || data.file.byteLength);
+
+          details.appendChild(nameEl);
+          details.appendChild(sizeEl);
+
+          const downloadBtn = document.createElement("button");
+          downloadBtn.className = "btn-download";
+          downloadBtn.innerText = "Pobierz plik";
+          downloadBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = data.filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            downloadBtn.innerText = "Pobrano ✓";
+            downloadBtn.style.opacity = "0.7";
+          };
+
+          card.appendChild(details);
+          card.appendChild(downloadBtn);
+          incomingList.prepend(card);
         }
       });
 
@@ -276,7 +377,6 @@
       });
     }
 
-    // Wysyłanie pliku
     function wyslijPlik(file) {
       if (!file) return;
       if (!activeConn || !activeConn.open) {
@@ -284,18 +384,20 @@
         return;
       }
 
-      logInfo.innerText = "Wysyłanie: " + file.name + " (" + (file.size / 1024 / 1024).toFixed(2) + " MB)...";
+      logInfo.innerText = "Wysyłanie: " + file.name + " (" + formatRozmiar(file.size) + ")...";
       progressBar.style.display = "block";
-      progressFill.style.width = "40%";
+      progressFill.style.width = "30%";
 
       const reader = new FileReader();
       reader.onload = (e) => {
+        progressFill.style.width = "70%";
         activeConn.send({
           file: e.target.result,
-          filename: file.name
+          filename: file.name,
+          size: file.size
         });
         progressFill.style.width = "100%";
-        logInfo.innerText = "Plik wysłany pomyślnie! 🚀";
+        logInfo.innerText = "Plik wysłany pomyślnie! Czeka na pobranie u odbiorcy 🚀";
         setTimeout(() => {
           progressBar.style.display = "none";
           progressFill.style.width = "0%";
@@ -309,7 +411,6 @@
       alert("Skopiowano Twój kod: " + myIdEl.innerText);
     }
 
-    // Obsługa przeciągania myszką
     const dropArea = document.getElementById("drop-area");
     dropArea.addEventListener("dragover", (e) => {
       e.preventDefault();
