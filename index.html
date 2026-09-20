@@ -3,194 +3,313 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZbyszekDrop — Błyskawiczny Transfer P2P</title>
+  <title>ZbyszekDrop — P2P File Transfer</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: #111827;
-      --border: #1f2937;
+      --bg: #07090e;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.1);
       --accent: #10b981;
-      --accent-hover: #059669;
-      --text: #f9fafb;
-      --text-muted: #9ca3af;
+      --accent-glow: rgba(16, 185, 129, 0.35);
+      --cyan: #06b6d4;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
       --download: #38bdf8;
-      --download-hover: #0284c7;
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
+
     body {
-      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 24px 16px;
+      overflow-x: hidden;
+      position: relative;
     }
+
+    /* Animowane tło */
+    #particles-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .glow-orb {
+      position: fixed;
+      width: 450px;
+      height: 450px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.28;
+      z-index: 0;
+      pointer-events: none;
+      animation: float 14s infinite alternate ease-in-out;
+    }
+    .glow-1 {
+      top: -100px;
+      left: -100px;
+      background: #10b981;
+    }
+    .glow-2 {
+      bottom: -100px;
+      right: -100px;
+      background: #0ea5e9;
+      animation-delay: -7s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(70px, 50px) scale(1.15); }
+    }
+
+    /* Główna karta Glassmorphism */
     .container {
+      position: relative;
+      z-index: 1;
       width: 100%;
       max-width: 540px;
       background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7),
+                  0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 26px;
+    }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
     }
     h1 {
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--accent);
     }
     p.desc {
       font-size: 14px;
       color: var(--text-muted);
-      margin-bottom: 24px;
-      line-height: 1.4;
+      line-height: 1.5;
     }
-    .box {
-      background: #1f2937;
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
+
+    /* Panele informacyjne */
+    .glass-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+      transition: border-color 0.2s ease;
+    }
+    .glass-box:focus-within {
+      border-color: rgba(16, 185, 129, 0.4);
     }
     .label {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      letter-spacing: 0.6px;
     }
+
     .id-row {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
     }
-    .badge {
-      font-family: monospace;
-      font-size: 18px;
-      background: #111827;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #374151;
+    .badge-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 19px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       color: #38bdf8;
       flex-grow: 1;
       text-align: center;
+      letter-spacing: 1.5px;
       user-select: all;
     }
+
     input[type="text"] {
       width: 100%;
-      background: #111827;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
       color: white;
       font-size: 14px;
       outline: none;
+      transition: all 0.2s;
     }
     input[type="text"]:focus {
-      border-color: var(--accent);
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
     }
-    button {
-      background: var(--accent);
-      color: #0b0f19;
+
+    button.btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #042f2e;
       border: none;
-      font-weight: 600;
-      padding: 10px 16px;
-      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 18px;
+      border-radius: 10px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
       white-space: nowrap;
-    }
-    button:hover {
-      background: var(--accent-hover);
-    }
-    .status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    button.btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+    button.btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: white !important;
+      box-shadow: none !important;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14) !important;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       font-size: 13px;
       margin-top: 10px;
       color: var(--text-muted);
     }
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: #eab308;
+      box-shadow: 0 0 10px #eab308;
+      transition: all 0.3s;
     }
     .dot.connected {
       background: #10b981;
+      box-shadow: 0 0 12px #10b981;
     }
+    .dot.error {
+      background: #ef4444;
+      box-shadow: 0 0 12px #ef4444;
+    }
+
+    /* Strefa upuszczania plików */
     .dropzone {
-      border: 2px dashed #374151;
-      border-radius: 12px;
-      padding: 30px;
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 34px 20px;
       text-align: center;
       cursor: pointer;
-      margin-top: 10px;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+      background: rgba(255, 255, 255, 0.01);
     }
     .dropzone:hover {
       border-color: var(--accent);
       background: rgba(16, 185, 129, 0.05);
+      transform: translateY(-2px);
     }
-    .dropzone input {
-      display: none;
+    .drop-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+      display: inline-block;
+      filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));
     }
-    .progress-bar {
+    .drop-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .drop-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Pasek postępu */
+    .progress-wrapper {
       width: 100%;
       height: 6px;
-      background: #374151;
-      border-radius: 4px;
-      margin-top: 15px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      margin-top: 16px;
       overflow: hidden;
       display: none;
     }
-    .progress-fill {
+    .progress-bar {
       height: 100%;
       width: 0%;
-      background: var(--accent);
-      transition: width 0.1s linear;
-    }
-    .log {
-      font-family: monospace;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 12px;
-      word-break: break-all;
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      transition: width 0.15s ease-out;
     }
 
-    /* KARTY ODEBRANYCH PLIKÓW */
+    /* Lista odebranych plików */
     .incoming-section {
       margin-top: 24px;
     }
-    .incoming-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 10px;
-    }
     .file-card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-left: 4px solid var(--download);
-      border-radius: 8px;
-      padding: 14px;
+      border-radius: 12px;
+      padding: 14px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      animation: fadeIn 0.3s ease;
+      margin-top: 10px;
+      animation: slideIn 0.3s ease;
     }
     .file-details {
       display: flex;
@@ -200,137 +319,229 @@
     .file-name {
       font-size: 14px;
       font-weight: 600;
-      color: var(--text);
+      color: #fff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 250px;
+      max-width: 260px;
     }
     .file-size {
       font-size: 12px;
       color: var(--text-muted);
       margin-top: 2px;
     }
-    .btn-download {
-      background: var(--download);
-      color: #0b0f19;
+    .btn-dl {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      color: #082f49;
       font-size: 13px;
+      font-weight: 700;
       padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
     }
-    .btn-download:hover {
-      background: var(--download-hover);
+    .btn-dl:hover {
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
+
+    /* Pływające powiadomienia Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>⚡ ZbyszekDrop</h1>
-    <p class="desc">Bezpośredni, bezpieczny transfer plików w sieci P2P (WebRTC). Dane lecą prosto między urządzeniami.</p>
+  <!-- Efekty wizualne w tle -->
+  <div class="glow-orb glow-1"></div>
+  <div class="glow-orb glow-2"></div>
+  <canvas id="particles-canvas"></canvas>
 
-    <!-- TWÓJ KOD -->
-    <div class="box">
-      <div class="label">Twój identyfikator urządzenia</div>
+  <div class="container">
+    <div class="header">
+      <div class="brand-badge">⚡ Bezpieczny P2P WebRTC</div>
+      <h1>ZbyszekDrop</h1>
+      <p class="desc">Błyskawiczny transfer plików bez serwera pośredniczącego. Pełna prędkość Twojego łącza.</p>
+    </div>
+
+    <!-- TWÓJ IDENTYFIKATOR -->
+    <div class="glass-box">
+      <div class="label">Twój unikalny kod urządzenia</div>
       <div class="id-row">
-        <div class="badge" id="my-id">Łączenie...</div>
-        <button onclick="kopiujKod()">Kopiuj</button>
+        <div class="badge-id" id="my-id">Łączenie...</div>
+        <button class="btn btn-secondary" onclick="kopiujKod()">Kopiuj</button>
       </div>
     </div>
 
-    <!-- POŁĄCZ Z KIMŚ -->
-    <div class="box">
+    <!-- POŁĄCZ Z INNYM URZĄDZENIEM -->
+    <div class="glass-box">
       <div class="label">Połącz z drugim urządzeniem</div>
       <div style="display: flex; gap: 8px;">
-        <input type="text" id="target-id" placeholder="Wklej ID kumpla lub telefonu..." />
-        <button onclick="polaczZPeerem()">Połącz</button>
+        <input type="text" id="target-id" placeholder="Wklej kod telefonu lub znajomego..." />
+        <button class="btn" onclick="polaczZPeerem()">Połącz</button>
       </div>
-      <div class="status">
+      <div class="status-badge">
         <span class="dot" id="status-dot"></span>
-        <span id="status-text">Oczekiwanie na połączenie...</span>
+        <span id="status-text">Oczekiwanie na sygnał sieci...</span>
       </div>
     </div>
 
-    <!-- STREFA WYSYŁANIA PLIKU -->
+    <!-- STREFA UPUSZCZANIA PLIKU -->
     <div class="dropzone" id="drop-area" onclick="document.getElementById('file-input').click()">
-      <p style="font-size: 15px; font-weight: 500; margin-bottom: 4px;">Kliknij lub upuść tutaj plik</p>
-      <p style="font-size: 12px; color: var(--text-muted);">Maksymalna prędkość Twojego łącza</p>
-      <input type="file" id="file-input" onchange="wyslijPlik(this.files[0])" />
+      <div class="drop-icon">📁</div>
+      <div class="drop-title">Kliknij lub upuść plik tutaj</div>
+      <div class="drop-sub">Brak limitu rozmiaru pliku</div>
+      <input type="file" id="file-input" style="display: none;" onchange="wyslijPlik(this.files[0])" />
     </div>
 
-    <div class="progress-bar" id="progress-bar">
-      <div class="progress-fill" id="progress-fill"></div>
+    <div class="progress-wrapper" id="progress-wrapper">
+      <div class="progress-bar" id="progress-bar"></div>
     </div>
 
-    <div class="log" id="log-info"></div>
-
-    <!-- ODEBRANE PLIKI -->
+    <!-- LISTA ODEBRANYCH PLIKÓW -->
     <div class="incoming-section" id="incoming-section" style="display: none;">
       <div class="label">Odebrane pliki gotowe do pobrania</div>
-      <div class="incoming-list" id="incoming-list"></div>
+      <div id="incoming-list"></div>
     </div>
   </div>
 
+  <div id="toast">Komunikat</div>
+
   <script>
+    // --- TŁO PARTICLES ---
+    const canvas = document.getElementById("particles-canvas");
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 0.8;
+        this.speedX = (Math.random() - 0.5) * 0.4;
+        this.speedY = (Math.random() - 0.5) * 0.4;
+        this.alpha = Math.random() * 0.5 + 0.1;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+      draw() {
+        ctx.fillStyle = `rgba(16, 185, 129, ${this.alpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 45; i++) {
+      particles.push(new Particle());
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // --- SYSTEM TOAST ---
+    function pokazToast(wiadomosc) {
+      const toast = document.getElementById("toast");
+      toast.innerText = wiadomosc;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    // --- P2P WEBRTC ---
     const randomId = Math.random().toString(36).substring(2, 7);
     const peer = new Peer(randomId);
-
     let activeConn = null;
 
     const myIdEl = document.getElementById("my-id");
     const statusDot = document.getElementById("status-dot");
     const statusText = document.getElementById("status-text");
-    const logInfo = document.getElementById("log-info");
     const progressBar = document.getElementById("progress-bar");
-    const progressFill = document.getElementById("progress-fill");
+    const progressWrapper = document.getElementById("progress-wrapper");
     const incomingSection = document.getElementById("incoming-section");
     const incomingList = document.getElementById("incoming-list");
 
     peer.on("open", (id) => {
       myIdEl.innerText = id;
+      statusText.innerText = "Gotowy do połączenia";
     });
 
     peer.on("connection", (conn) => {
       activeConn = conn;
-      setupConnectionHandlers();
+      setupConnection();
     });
 
     function polaczZPeerem() {
       const targetId = document.getElementById("target-id").value.trim();
-      if (!targetId) return;
-      statusText.innerText = "Łączenie z: " + targetId + "...";
+      if (!targetId) {
+        pokazToast("Wpisz kod urządzenia!");
+        return;
+      }
+      statusText.innerText = "Łączenie z " + targetId + "...";
       activeConn = peer.connect(targetId, { reliable: true });
-      setupConnectionHandlers();
+      setupConnection();
     }
 
-    function formatRozmiar(bytes) {
-      if (bytes < 1024) return bytes + " B";
-      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-      return (bytes / 1048576).toFixed(2) + " MB";
-    }
-
-    function setupConnectionHandlers() {
+    function setupConnection() {
       activeConn.on("open", () => {
-        statusDot.classList.add("connected");
-        statusText.innerText = "Połączono z urządzeniem!";
-        statusText.style.color = "#10b981";
+        statusDot.className = "dot connected";
+        statusText.innerText = "Połączono pomyślnie!";
+        statusText.style.color = "#34d399";
+        pokazToast("Połączono z drugim urządzeniem!");
       });
 
       activeConn.on("data", (data) => {
         if (data.file) {
-          logInfo.innerText = "Odebrano nowy plik: " + data.filename + " ✅";
-
-          // Pokaż sekcję z listą plików
           incomingSection.style.display = "block";
 
-          // Tworzenie bloba w pamięci (plik czeka na kliknięcie)
           const blob = new Blob([data.file]);
           const url = URL.createObjectURL(blob);
 
-          // Generowanie karty z plikiem
           const card = document.createElement("div");
           card.className = "file-card";
 
@@ -340,7 +551,6 @@
           const nameEl = document.createElement("div");
           nameEl.className = "file-name";
           nameEl.innerText = data.filename;
-          nameEl.title = data.filename;
 
           const sizeEl = document.createElement("div");
           sizeEl.className = "file-size";
@@ -349,79 +559,88 @@
           details.appendChild(nameEl);
           details.appendChild(sizeEl);
 
-          const downloadBtn = document.createElement("button");
-          downloadBtn.className = "btn-download";
-          downloadBtn.innerText = "Pobierz plik";
-          downloadBtn.onclick = () => {
+          const dlBtn = document.createElement("button");
+          dlBtn.className = "btn-dl";
+          dlBtn.innerText = "Pobierz plik";
+          dlBtn.onclick = () => {
             const a = document.createElement("a");
             a.href = url;
             a.download = data.filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            downloadBtn.innerText = "Pobrano ✓";
-            downloadBtn.style.opacity = "0.7";
+            dlBtn.innerText = "Pobrano ✓";
+            dlBtn.style.opacity = "0.7";
+            pokazToast("Pobrano plik: " + data.filename);
           };
 
           card.appendChild(details);
-          card.appendChild(downloadBtn);
+          card.appendChild(dlBtn);
           incomingList.prepend(card);
+          pokazToast("Odebrano nowy plik: " + data.filename);
         }
       });
 
       activeConn.on("close", () => {
-        statusDot.classList.remove("connected");
+        statusDot.className = "dot error";
         statusText.innerText = "Rozłączono.";
         statusText.style.color = "#ef4444";
         activeConn = null;
+        pokazToast("Urządzenie zostało rozłączone.");
       });
     }
 
     function wyslijPlik(file) {
       if (!file) return;
       if (!activeConn || !activeConn.open) {
-        alert("Najpierw musisz połączyć się z drugim urządzeniem!");
+        pokazToast("Najpierw połącz się z drugim urządzeniem!");
         return;
       }
 
-      logInfo.innerText = "Wysyłanie: " + file.name + " (" + formatRozmiar(file.size) + ")...";
-      progressBar.style.display = "block";
-      progressFill.style.width = "30%";
+      progressWrapper.style.display = "block";
+      progressBar.style.width = "40%";
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        progressFill.style.width = "70%";
+        progressBar.style.width = "85%";
         activeConn.send({
           file: e.target.result,
           filename: file.name,
           size: file.size
         });
-        progressFill.style.width = "100%";
-        logInfo.innerText = "Plik wysłany pomyślnie! Czeka na pobranie u odbiorcy 🚀";
+        progressBar.style.width = "100%";
+        pokazToast("Plik " + file.name + " wysłany!");
         setTimeout(() => {
-          progressBar.style.display = "none";
-          progressFill.style.width = "0%";
-        }, 2000);
+          progressWrapper.style.display = "none";
+          progressBar.style.width = "0%";
+        }, 1500);
       };
       reader.readAsArrayBuffer(file);
     }
 
     function kopiujKod() {
       navigator.clipboard.writeText(myIdEl.innerText);
-      alert("Skopiowano Twój kod: " + myIdEl.innerText);
+      pokazToast("Skopiowano Twój kod: " + myIdEl.innerText);
     }
 
+    function formatRozmiar(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1048576).toFixed(2) + " MB";
+    }
+
+    // Drag and drop
     const dropArea = document.getElementById("drop-area");
     dropArea.addEventListener("dragover", (e) => {
       e.preventDefault();
       dropArea.style.borderColor = "#10b981";
     });
     dropArea.addEventListener("dragleave", () => {
-      dropArea.style.borderColor = "#374151";
+      dropArea.style.borderColor = "rgba(255, 255, 255, 0.15)";
     });
     dropArea.addEventListener("drop", (e) => {
       e.preventDefault();
-      dropArea.style.borderColor = "#374151";
+      dropArea.style.borderColor = "rgba(255, 255, 255, 0.15)";
       if (e.dataTransfer.files.length > 0) {
         wyslijPlik(e.dataTransfer.files[0]);
       }
